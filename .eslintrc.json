@@ -1,22 +1,25 @@
 {
     "env": {
-        "browser": true,
-        "commonjs": true,
-        "es2021": true
+    "browser": true,
+    "commonjs": true,
+    "es2021": true,
+    "node": true
     },
-    "extends": [
-        "eslint:recommended",
-        "plugin:react/recommended"
-    ],
+    "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaFeatures": {
-            "jsx": true
-        },
-        "ecmaVersion": "latest"
+    "ecmaVersion": "latest"
     },
-    "plugins": [
-        "react"
-    ],
     "rules": {
+    "indent": [
+    "error",
+    4
+    ],
+    "linebreak-style": [
+    "error",
+    "windows"
+    ],
+    "semi": ["error", "never"],
+    "quotes": ["error", "single"]
     }
-}
+    }
+    
