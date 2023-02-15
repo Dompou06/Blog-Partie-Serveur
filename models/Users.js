@@ -4,9 +4,9 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false
         },
-        password: {
+        presentation: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true
         },
     })
 
@@ -19,6 +19,9 @@ module.exports = (sequelize, DataTypes) => {
             onDelete: 'cascade',
         })
         Users.hasMany(models.Comments, {
+            onDelete: 'cascade',
+        })
+        Users.hasOne(models.Auths, {
             onDelete: 'cascade',
         })
     }

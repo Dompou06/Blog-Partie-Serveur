@@ -8,7 +8,7 @@ exports.addPost = async (req, res) => {
     post.UserId = req.user.id
     await Posts.create(post)
         .then(result => {
-            console.log(result)
+            // console.log(result)
             const id = result.id
             res.status(httpStatus.OK).json(id)
         })
@@ -51,6 +51,58 @@ exports.allPosts = async (req, res) => {
             listOfPosts
         )
     }
+}
+exports.postsLiked = async (req, res) => {
+    const idUser = req.user.id
+    let userId = {}
+    let right = false
+    if(req.params.id.includes('user')) {
+        //console.log('req.params.id.split(user)[0]', req.params.id)       
+        userId.UserId = req.params.id.replace('user','')
+        right = true
+    } else {
+        const id = req.params.id
+        userId = await Posts.findByPk(id, {
+            attributes: ['UserId']
+        })
+        if(userId.UserId === idUser) {
+            right = true
+        }
+    }
+    // console.log('userId', userId.UserId)
+    const likedPosts = await Posts.findAll(
+        {
+            where: {
+                UserId: userId.UserId
+            },
+            include: [ {
+                model: Likes,
+                where: {
+                    UserId: idUser
+                },
+                attributes: ['PostId'],
+            }],
+            attributes: []
+        })
+    /* const listOfPosts = await Posts.findAll({
+        where: {
+            UserId: id
+        },
+        include: [Likes]
+    })*/
+    /*const likedPosts = await Likes.findAll({
+        where: {
+            userId: id 
+        }
+    })*/
+    // console.log('likedPosts', likedPosts)
+    res.send({
+        right: right,
+        likedPosts})
+    /*res.send({
+       //listOfPosts: listOfPosts,
+        likedPosts: likedPosts
+    })*/
 }
 exports.updatePost = async (req, res) => {
     // console.log(req.body.newTitle)

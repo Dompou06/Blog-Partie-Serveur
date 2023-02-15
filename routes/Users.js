@@ -11,7 +11,9 @@ const { validateToken } = require('../middlewares/Auth')
 router.post('/', userController.signup)
 router.post('/login', userController.login)
 router.get('/auth', validateToken, userController.authentification)
+router.get('/passwordforget', userController.passwordForget)
 router.get('/basicinfo/:id', userController.profilePost)
+router.put('/profile', validateToken, userController.updateProfile)
 router.put('/changepassword', validateToken, async (req, res) => {
     const idUser = req.user.id
     const { oldPassword, newPassword } = req.body
