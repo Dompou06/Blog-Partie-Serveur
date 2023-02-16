@@ -8,8 +8,16 @@ router.get('/:postId', async (req, res) => {
     const comment = await Comments.findAll({
         where: {
             PostId: postId
-        }
+        },
+        order: [
+            ['createdAt', 'DESC']
+        ],
+        include: [{
+            model: Users,
+            attributes: ['username']
+        }]
     })
+    // console.log(comment)
     res.send(comment)
 })
 router.post('/', validateToken, async (req, res) => {
@@ -33,7 +41,6 @@ router.post('/', validateToken, async (req, res) => {
 })
 router.delete('/:commentId', validateToken, async (req, res) => {
     const commentId = req.params.commentId
-    console.log(commentId)
     await  Comments.destroy({
         where: {
             id: commentId

@@ -1,9 +1,9 @@
 {                           
   "development": {
-    "username": "dpstudio",
-    "password": "2021AD!06Shak",
-    "database": "dpstudio_vue",
-    "host": "mysql-dpstudio.alwaysdata.net",
+    "username": "root",
+    "password": "Suddho!06Sharna2023",
+    "database": "blogdb",
+    "host": "localhost",
     "dialect": "mysql"
   },
   "test": {
@@ -20,4 +20,5 @@
     "host": "mysql-dpstudio.alwaysdata.net",
     "dialect": "mysql"
   }
+
 }

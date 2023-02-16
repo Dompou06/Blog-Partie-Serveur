@@ -1,7 +1,7 @@
 require('dotenv').config()
 const httpStatus = require('http-status')
 
-const { Users, Posts, Likes } = require('../models')
+const { Users, Posts, Likes, Comments } = require('../models')
 
 exports.addPost = async (req, res) => {
     let post = req.body
@@ -21,8 +21,9 @@ exports.onePost = async (req, res) => {
             attributes: ['username']
         }] 
     })
+    // console.log('post', post)
     //const user = await Users.findByPk(post.UserId)
-    // console.log(user.username)
+    // console.log('user', user.username)
     // const username = user.username
     res.send(post)
 }
@@ -34,7 +35,9 @@ exports.allPosts = async (req, res) => {
         include: [Likes, {
             model: Users,
             attributes: ['username']
-        }]
+        },
+        Comments
+        ]
     })
     if(req.user){
         const likedPosts = await Likes.findAll({

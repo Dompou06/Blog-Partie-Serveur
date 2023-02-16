@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt')
 const crypted = require('../utils/crypt')
 const { sign } = require('jsonwebtoken')
 
-const { Users, Posts, Likes, Auths } = require('../models')
+const { Users, Posts, Likes, Auths, Comments } = require('../models')
 
 //Auths.sync({ alter: true })
 
@@ -65,7 +65,7 @@ exports.login = async (req, res) => {
                 Users.findByPk(auth.UserId, {
                     attributes: ['id','username']
                 }).then(user => {
-                    console.log(user.username)
+                    //console.log(user.username)
                     const accessToken = sign({ id: user.id }, 'importantsecret')
                     res.status(httpStatus.OK).send({
                         token: accessToken,
@@ -93,7 +93,7 @@ exports.authentification = async (req, res) => {
     })
 }
 exports.profilePost = async (req, res) => {
-    // console.log(req.params.id)
+    console.log(req.params.id)
     let userId = {}
     if(req.params.id.includes('user')) {
         //console.log('req.params.id.split(user)[0]', req.params.id)       
@@ -108,7 +108,7 @@ exports.profilePost = async (req, res) => {
         include: [ {
             model: Posts,
             attributes: {exclude: ['UserId']},
-            include: [Likes]
+            include: [Likes, Comments]
         }]
     })
     res.send(basicInfo)
