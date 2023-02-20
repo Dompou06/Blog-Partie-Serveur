@@ -47,7 +47,7 @@ exports.signup = async (req, res) => {
         res.status(httpStatus.UNAUTHORIZED).send({error: 'Cet identifiant est déjà octroyé'})
     }
 }
-exports.login = async (req, res) => {
+exports.login = async (req, res) => {  
     const { email, password } = req.body
     const crytedEmail = crypted.encrypt(email)
     const auth = await Auths.findOne({
