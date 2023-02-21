@@ -1,4 +1,5 @@
 const { verify } = require('jsonwebtoken')
+require('dotenv').config()
 const httpStatus = require('http-status')
 
 const validateToken = (req, res, next) => {
@@ -8,7 +9,7 @@ const validateToken = (req, res, next) => {
     } else {
         try {
             // console.log('accessToken', accessToken)
-            const validToken = verify(accessToken, 'importantsecret')
+            const validToken = verify(accessToken, process.env.TOKENSECRET)
             req.user = validToken
             // console.log('validToken', validToken)
             if(validToken) {

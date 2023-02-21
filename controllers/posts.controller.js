@@ -5,7 +5,7 @@ const { Users, Posts, Likes, Comments } = require('../models')
 
 exports.addPost = async (req, res) => {
     let post = req.body
-    post.UserId = req.user.id
+    post.UserId = req.user
     await Posts.create(post)
         .then(result => {
             // console.log(result)
@@ -38,11 +38,11 @@ exports.allPosts = async (req, res) => {
         },
         Comments
         ]
-    })
+    })        
     if(req.user){
         const likedPosts = await Likes.findAll({
             where: {
-                userId: req.user.id 
+                UserId: req.user 
             }
         })
         res.send({
@@ -56,7 +56,7 @@ exports.allPosts = async (req, res) => {
     }
 }
 exports.postsLiked = async (req, res) => {
-    const idUser = req.user.id
+    const idUser = req.user
     let userId = {}
     let right = false
     if(req.params.id.includes('user')) {

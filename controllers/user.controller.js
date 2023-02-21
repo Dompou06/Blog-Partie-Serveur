@@ -190,7 +190,7 @@ exports.passwordReset = async (req, res) => {
     }
 }
 exports.authentification = async (req, res) => {
-    await Users.findByPk(req.user.id, {
+    await Users.findByPk(req.user, {
         attributes: {
             exclude: ['password']
         }
@@ -224,7 +224,7 @@ exports.profilePost = async (req, res) => {
     res.send(basicInfo)
 }
 exports.updateProfile = async (req, res) => {
-    const id = req.user.id
+    const id = req.user
     const newPresentation = req.body.presentation
     //console.log(req.body)
     const user = await Users.findByPk(id)
