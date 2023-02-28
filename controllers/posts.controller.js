@@ -2,15 +2,32 @@ require('dotenv').config()
 const httpStatus = require('http-status')
 
 const { Users, Posts, Likes, Comments } = require('../models')
+const options = {
+    sameSite: 'strict', 
+    path: '/',
+    httpOnly: true,
+    //En production
+    // secure: true,
+    expired: new Date(Date.now()) + process.env.EXPIRETOKEN
+}
 
 exports.addPost = async (req, res) => {
     let post = req.body
-    post.UserId = req.user
+    post.UserId = req.user.id
     await Posts.create(post)
         .then(result => {
             // console.log(result)
             const id = result.id
-            res.status(httpStatus.OK).json(id)
+            if(req.accessToken) {
+                res.status(httpStatus.OK)
+                    .cookie('token', req.accessToken, options)
+                    .send({
+                        token: req.refreshToken,
+                        id: id
+                    })
+            } else {
+                res.status(httpStatus.OK).json(id)
+            }
         })
 }
 exports.onePost = async (req, res) => {
@@ -42,7 +59,7 @@ exports.allPosts = async (req, res) => {
     if(req.user){
         const likedPosts = await Likes.findAll({
             where: {
-                UserId: req.user 
+                UserId: req.user.id 
             }
         })
         res.send({
@@ -56,12 +73,12 @@ exports.allPosts = async (req, res) => {
     }
 }
 exports.postsLiked = async (req, res) => {
-    const idUser = req.user
+    const idUser = req.user.id
     let userId = {}
     let right = false
-    if(req.params.id.includes('user')) {
+    if(!req.params.id) {
         //console.log('req.params.id.split(user)[0]', req.params.id)       
-        userId.UserId = req.params.id.replace('user','')
+        userId.UserId = idUser
         right = true
     } else {
         const id = req.params.id
@@ -72,7 +89,7 @@ exports.postsLiked = async (req, res) => {
             right = true
         }
     }
-    // console.log('userId', userId.UserId)
+    //console.log('userId', userId.UserId)
     const likedPosts = await Posts.findAll(
         {
             where: {
@@ -81,11 +98,12 @@ exports.postsLiked = async (req, res) => {
             include: [ {
                 model: Likes,
                 where: {
-                    UserId: idUser
+                    UserId: userId.UserId
                 },
                 attributes: ['PostId'],
             }],
-            attributes: []
+            attributes: ['title', 'postText', 'createdAt'],
+            
         })
     /* const listOfPosts = await Posts.findAll({
         where: {
@@ -98,7 +116,7 @@ exports.postsLiked = async (req, res) => {
             userId: id 
         }
     })*/
-    // console.log('likedPosts', likedPosts)
+    console.log('likedPosts', likedPosts)
     res.send({
         right: right,
         likedPosts})
@@ -110,19 +128,36 @@ exports.postsLiked = async (req, res) => {
 exports.updatePost = async (req, res) => {
     // console.log(req.body.newTitle)
     const id = req.params.id
+    const post = await Posts.findByPk(id)
     if(req.body.newTitle) {
         //console.log(req.body.newTitle)
         const newTitle = req.body.newTitle
-        const post = await Posts.findByPk(id)
         await post.update({ title: newTitle })
         await post.save()
     } else {
         // console.log(req.body.newBody)       
-        const post = await Posts.findByPk(id)
+        // const post = await Posts.findByPk(id)
         await post.update({ postText: req.body.newBody })
         await post.save()
     }
-    res.send('Post mis à jour')
+    const result = await await Posts.findByPk(id, 
+        { attributes: ['title', 'postText'],
+            include: [Likes, {
+                model: Users,
+                attributes: ['username']
+            }]}
+    )
+
+    if(req.accessToken) {
+        res.status(httpStatus.OK)
+            .cookie('token', req.accessToken, options)
+            .send({
+                token: req.refreshToken,
+                post: result
+            })
+    } else {
+        res.status(httpStatus.OK).send(result)
+    }
 }
 exports.deletePost = async (req, res) => {
     const id = req.params.id

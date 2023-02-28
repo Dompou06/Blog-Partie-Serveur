@@ -7,6 +7,14 @@ const nodemailer = require('nodemailer')
 const { sign } = require('jsonwebtoken')
 
 const { Users, Posts, Likes, Auths, Comments, Passwords } = require('../models')
+const options = {
+    sameSite: 'strict', 
+    path: '/',
+    httpOnly: true,
+    //En production
+    // secure: true,
+    expired: new Date(Date.now()) + process.env.EXPIRETOKEN
+}
 
 exports.signup = async (req, res) => {
     const { username, email, password } = req.body
@@ -48,6 +56,7 @@ exports.signup = async (req, res) => {
     }
 }
 exports.login = async (req, res) => {  
+    //console.log(req.body)
     const { email, password } = req.body
     const crytedEmail = crypted.encrypt(email)
     const auth = await Auths.findOne({
@@ -68,17 +77,40 @@ exports.login = async (req, res) => {
                 Users.findByPk(auth.UserId, {
                     attributes: ['id','username']
                 }).then(user => {
-                //    console.log(user.username)
-                    const accessToken = sign({ id: user.id }, process.env.TOKENSECRET)
-                    res.status(httpStatus.OK).send({
+                    //console.log(user.id)
+                    const accessToken = sign({ id: user.id }, process.env.TOKEN, { expiresIn: process.env.EXPIRETOKEN })
+                    const refreshToken = sign({ id: user.id }, process.env.REFRESHTOKEN, { expiresIn: process.env.EXPIREREFRESHTOKEN })
+                    /*  res.status(httpStatus.OK).send({
                         token: accessToken,
                         username: user.username, 
+                        //???
                         id: user.id
-                    })
+                    })*/
+                    //res => {
+                    res.status(httpStatus.OK)
+                        .cookie('token', accessToken, options)
+                        .send({
+                            token: refreshToken,
+                            username: user.username, 
+                            //???
+                            // id: user.id
+                        })
+                    /* .json({
+                            token: accessToken,
+                            username: user.username, 
+                            //???
+                            id: user.id
+                        })*/
+                    // }
                 })
             }
         })
     }
+} 
+exports.logout = async (req, res) => {
+    res.status(httpStatus.OK)
+        .clearCookie('token')
+        .send('Déconnecté')
 }
 exports.passwordForget = async (req, res) => {
     //  console.log(req.body.email)
@@ -190,29 +222,49 @@ exports.passwordReset = async (req, res) => {
     }
 }
 exports.authentification = async (req, res) => {
-    await Users.findByPk(req.user, {
+    //console.log('req.user', req.user)
+    await Users.findByPk(req.user.id, {
         attributes: {
-            exclude: ['password']
+            exclude: ['password', 'id']
         }
     }).then(response => {
         if(response) {
-            res.status(httpStatus.OK).send(response)
+            if(req.accessToken) {
+                res.status(httpStatus.OK)
+                    .cookie('token', req.accessToken, options)
+                    .send({
+                        token: req.refreshToken,
+                        response: response
+                    })
+            } else {
+                res.status(httpStatus.OK).send(response)
+            }
         } else {
             res.status(httpStatus.OK).send('no response')
         }
     })
 }
 exports.profilePost = async (req, res) => {
-    console.log(req.params.id)
+    // console.log(req.params.id)
     let userId = {}
-    if(req.params.id.includes('user')) {
-        //console.log('req.params.id.split(user)[0]', req.params.id)       
-        userId.UserId = req.params.id.replace('user','')
+    let id =''
+    if(req.params.id.includes('comment')) {
+        // console.log(req.params.id)
+        const split = req.params.id.split('comment')
+        // console.log(split[1])
+        id = split[1]
+        userId = await Comments.findByPk(id, {
+            attributes: ['UserId']
+        })
+        //  console.log(userId)
     } else {
-        userId = await Posts.findByPk(req.params.id, {
+        id = req.params.id 
+        userId = await Posts.findByPk(id, {
             attributes: ['UserId']
         })
     }
+    
+    // }
     const basicInfo = await Users.findByPk(userId.UserId, {
         attributes: ['username', 'presentation'],
         include: [ {
@@ -223,12 +275,45 @@ exports.profilePost = async (req, res) => {
     })
     res.send(basicInfo)
 }
+exports.profileMe = async (req, res) => {
+    const userId = req.user.id 
+    const basicInfo = await Users.findByPk(userId, {
+        attributes: ['username', 'presentation'],
+        include: [ {
+            model: Posts,
+            attributes: {exclude: ['UserId']},
+            include: [Likes, Comments]
+        }]
+    })
+    if(req.accessToken) {
+        /*console.log('now', {
+            token: req.refreshToken,
+            basicInfo: basicInfo
+        })*/
+        res.status(httpStatus.OK)
+            .cookie('token', req.accessToken, options)
+            .send({
+                token: req.refreshToken,
+                basicInfo: basicInfo
+            })
+    } else {
+        res.status(httpStatus.OK).send(basicInfo)
+    }
+}
 exports.updateProfile = async (req, res) => {
-    const id = req.user
+    const id = req.user.id
     const newPresentation = req.body.presentation
     //console.log(req.body)
     const user = await Users.findByPk(id)
     await user.update({ presentation: newPresentation })
     await user.save()
-    res.send('Présentation mise à jour')
+    if(req.accessToken) {
+        res.status(httpStatus.OK)
+            .cookie('token', req.accessToken, options)
+            .send({
+                token: req.refreshToken
+            })
+    } else {
+        res.send('Présentation mise à jour')
+    }
 }
