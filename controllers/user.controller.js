@@ -57,7 +57,7 @@ exports.signup = async (req, res) => {
 }
 exports.login = async (req, res) => {  
     //console.log(req.body)
-    const { email, password } = req.body
+    const { email, password, remember } = req.body
     const crytedEmail = crypted.encrypt(email)
     const auth = await Auths.findOne({
         where: {
@@ -79,14 +79,12 @@ exports.login = async (req, res) => {
                 }).then(user => {
                     //console.log(user.id)
                     const accessToken = sign({ id: user.id }, process.env.TOKEN, { expiresIn: process.env.EXPIRETOKEN })
-                    const refreshToken = sign({ id: user.id }, process.env.REFRESHTOKEN, { expiresIn: process.env.EXPIREREFRESHTOKEN })
-                    /*  res.status(httpStatus.OK).send({
-                        token: accessToken,
-                        username: user.username, 
-                        //???
-                        id: user.id
-                    })*/
-                    //res => {
+                    let refreshToken = ''
+                    if(remember === true) {
+                        refreshToken = sign({ id: user.id }, process.env.REMEMBERTOKEN, { expiresIn: process.env.EXPIREREMEMBERTOKEN })
+                    } else {
+                        refreshToken = sign({ id: user.id }, process.env.REFRESHTOKEN, { expiresIn: process.env.EXPIREREFRESHTOKEN })
+                    }
                     res.status(httpStatus.OK)
                         .cookie('token', accessToken, options)
                         .send({
@@ -277,14 +275,51 @@ exports.profilePost = async (req, res) => {
 }
 exports.profileMe = async (req, res) => {
     const userId = req.user.id 
+    const userInfo = {}
     const basicInfo = await Users.findByPk(userId, {
         attributes: ['username', 'presentation'],
         include: [ {
             model: Posts,
             attributes: {exclude: ['UserId']},
             include: [Likes, Comments]
-        }]
+        },
+        {
+            model: Auths,
+            attributes: {exclude: ['UserId']}
+        },
+        ]
     })
+    userInfo.username = basicInfo.username
+    userInfo.presentation = basicInfo.presentation
+    userInfo.email = crypted.decrypt(basicInfo.Auth.email)
+    if(basicInfo.Auth.mobile) {
+        userInfo.mobile = crypted.decrypt(basicInfo.Auth.mobile)
+    } else {  
+        userInfo.mobile = ''
+    }
+    if(basicInfo.Auth.tel) {
+        userInfo.tel = crypted.decrypt(basicInfo.Auth.tel)
+    } else {  
+        userInfo.tel = ''
+    }
+    if(basicInfo.Auth.address) {
+        userInfo.address = crypted.decrypt(basicInfo.Auth.address)
+    } else {  
+        userInfo.address = ''
+    }
+    if(basicInfo.Auth.cp) {
+        userInfo.cp = crypted.decrypt(basicInfo.Auth.cp)
+    } else {  
+        userInfo.cp = ''
+    }
+    if(basicInfo.Auth.city) {
+        userInfo.city = crypted.decrypt(basicInfo.Auth.city)
+    } else {  
+        userInfo.city = ''
+    }
+    userInfo.state = basicInfo.Auth.state
+    userInfo.Posts = basicInfo.Posts
+    //console.log('basicInfo', email)
     if(req.accessToken) {
         /*console.log('now', {
             token: req.refreshToken,
@@ -294,19 +329,37 @@ exports.profileMe = async (req, res) => {
             .cookie('token', req.accessToken, options)
             .send({
                 token: req.refreshToken,
-                basicInfo: basicInfo
+                basicInfo: userInfo
             })
     } else {
-        res.status(httpStatus.OK).send(basicInfo)
+        res.status(httpStatus.OK).send({basicInfo: userInfo})
     }
 }
 exports.updateProfile = async (req, res) => {
     const id = req.user.id
-    const newPresentation = req.body.presentation
+    const field = req.body.field
+    
     //console.log(req.body)
     const user = await Users.findByPk(id)
-    await user.update({ presentation: newPresentation })
-    await user.save()
+    if(field === 'presentation') {
+        await user.update({ [field]: req.body.value })
+        await user.save()
+    } else {
+        let value = ''
+        if(field != 'state') {
+            value = crypted.encrypt(req.body.value)
+        } else {
+            value = req.body.value
+        }
+        const auth = await Auths.findOne({
+            where: {
+                UserId: user.id
+            } 
+        })
+        await auth.update({ [field]: value })
+        await auth.save()
+    }
+    //console.log('user', user)
     if(req.accessToken) {
         res.status(httpStatus.OK)
             .cookie('token', req.accessToken, options)

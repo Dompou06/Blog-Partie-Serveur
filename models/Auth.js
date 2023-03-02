@@ -8,7 +8,30 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false
         },
-        
+        address: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        cp: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        city: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        state: {
+            type: DataTypes.STRING,
+            defaultValue: 'France'
+        },
+        tel: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        mobile: {
+            type: DataTypes.STRING,
+            allowNull: true
+        } 
     })
 
     Auths.associate = (models) => { 
