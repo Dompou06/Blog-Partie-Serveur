@@ -10,7 +10,54 @@ const options = {
     // secure: true,
     expired: new Date(Date.now()) + process.env.EXPIRETOKEN
 }
-
+exports.allComments = async (req, res) => {
+    // console.log('postId', req.params.postId)
+    const postId = req.params.postId
+    const comments = await Comments.findAll({
+        where: {
+            PostId: postId
+        },
+        order: [
+            ['createdAt', 'DESC']
+        ],
+        attributes: {
+            exclude: ['UserId']
+        },
+        include: [{
+            model: Users,
+            attributes: ['username']
+        }]
+    })
+    /* if(req.user) {
+        const userId = req.user.id
+        const commentsUser = await Comments.findAll({
+            where: {
+                PostId: postId,
+                UserId: userId
+            },   
+            attributes: {
+                exclude: ['UserId']
+            }
+        })
+        comments.forEach(comment => {
+            let exist = commentsUser.some(user => user.id === comment.id)
+            if (exist) { 
+                comment.dataValues.right = true
+                //console.log(comment.dataValues)
+            }
+        })
+        res.status(httpStatus.OK).send(comments)
+    } else {
+    //  console.log(comments)
+        comments.forEach(comment => {
+            comment.dataValues.right = false
+        //  console.log(comment.dataValues)
+        })
+        res.status(httpStatus.OK).send(comments)
+    }*/
+    //  console.log(comments)
+    res.status(httpStatus.OK).send(comments)
+}
 exports.addComment = async (req, res) => {
     const comment = req.body
     //console.log('comment', comment)

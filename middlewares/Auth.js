@@ -12,14 +12,14 @@ const validateToken = (req, res, next) => {
             // console.log('accessToken', accessToken)
             const validToken = verify(accessToken, process.env.TOKEN)
             req.user = validToken
-            //  console.log('validToken', validToken)
+            // console.log('validToken', validToken)
             if(validToken) {
                 return next()
             } 
         } catch (err) {
             // console.log('err', err)
             if(err.name === 'TokenExpiredError') {
-                // console.log('ici expired', req.header('accessToken'))
+                //console.log('ici expired', req.header('accessToken'))
                 const refreshToken = req.header('accessToken')
                 if(!refreshToken) {
                     return res.status(httpStatus.FORBIDDEN)
@@ -27,34 +27,41 @@ const validateToken = (req, res, next) => {
                         .send({error: 'Connectez-vous'})
                 } else {
                     try {
-                        // console.log(refreshToken)
+                        //console.log(refreshToken)
                         const validRefreshToken = verify(refreshToken, process.env.REFRESHTOKEN)
-                        // console.log(validToken)
+                        // console.log('validRefreshToken', validRefreshToken)
                         if(validRefreshToken) {
+                            //  console.log('refresh ok')
                             req.user = validRefreshToken
                             req.accessToken = sign({ id: validRefreshToken.id }, process.env.TOKEN, { expiresIn: process.env.EXPIRETOKEN })
                             req.refreshToken = sign({ id: validRefreshToken.id }, process.env.REFRESHTOKEN, { expiresIn: process.env.EXPIREREFRESHTOKEN })
                             //  console.log('req.refreshToken', req.refreshToken)
                             return next()
-                        } else {
+                        } 
+                    }
+                    catch (err) {
+                        /*  console.log('refreshexpired', err.name)
+                        if(err.name === 'TokenExpiredError') {*/
+                        try {
                             const validRememberToken = verify(refreshToken, process.env.REMEMBERTOKEN)
+                            // console.log('validRememberToken', validRememberToken)
                             if(validRememberToken) {
                                 req.user = validRememberToken
                                 req.accessToken = sign({ id: validRememberToken.id }, process.env.TOKEN, { expiresIn: process.env.EXPIRETOKEN })
                                 req.refreshToken = sign({ id: validRememberToken.id }, process.env.REMEMBERTOKEN, { expiresIn: process.env.EXPIREREMEMBERTOKEN })
                                 return next()
-                            } else {
-                                return res.status(httpStatus.FORBIDDEN)
-                                    .clearCookie('token')
-                                    .send({error: 'Connectez-vous'})
-                            }
+                            } 
+                        } catch(err) {
+                            // console.log('refreshexpired', err.name)
+                            return res.status(httpStatus.FORBIDDEN)
+                                .clearCookie('token')
+                                .send({error: 'Connectez-vous'})
                         }
-
-                    }
-                    catch (err) {
-                        return res.status(httpStatus.FORBIDDEN)
-                            .clearCookie('token')
-                            .send({error: 'Connectez-vous'})
+                        /* } else {
+                            return res.status(httpStatus.FORBIDDEN)
+                                .clearCookie('token')
+                                .send({error: 'Connectez-vous'})
+                        }*/
                     }
                 }
             } else {

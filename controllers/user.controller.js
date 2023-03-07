@@ -18,6 +18,7 @@ const options = {
 
 exports.signup = async (req, res) => {
     const { username, email, password } = req.body
+    //console.log(req.body)
     const user = await Users.findOne({
         where: {
             username: username
@@ -80,7 +81,9 @@ exports.login = async (req, res) => {
                     //console.log(user.id)
                     const accessToken = sign({ id: user.id }, process.env.TOKEN, { expiresIn: process.env.EXPIRETOKEN })
                     let refreshToken = ''
+                    // console.log('remember', remember)
                     if(remember === true) {
+                        // console.log('ok')
                         refreshToken = sign({ id: user.id }, process.env.REMEMBERTOKEN, { expiresIn: process.env.EXPIREREMEMBERTOKEN })
                     } else {
                         refreshToken = sign({ id: user.id }, process.env.REFRESHTOKEN, { expiresIn: process.env.EXPIREREFRESHTOKEN })
@@ -268,7 +271,14 @@ exports.profilePost = async (req, res) => {
         include: [ {
             model: Posts,
             attributes: {exclude: ['UserId']},
-            include: [Likes, Comments]
+            include: [{
+                model: Likes,
+                attributes: ['id'],
+            }, {
+                model: Comments,
+                attributes: ['id'],
+            }
+            ]
         }]
     })
     res.send(basicInfo)
@@ -338,7 +348,6 @@ exports.profileMe = async (req, res) => {
 exports.updateProfile = async (req, res) => {
     const id = req.user.id
     const field = req.body.field
-    
     //console.log(req.body)
     const user = await Users.findByPk(id)
     if(field === 'presentation') {
@@ -369,4 +378,15 @@ exports.updateProfile = async (req, res) => {
     } else {
         res.send('Présentation mise à jour')
     }
+}
+exports.delete = async (req, res) => {
+    const id = req.user.id
+    await Users.destroy({
+        where: {
+            id: id
+        } 
+    })
+    res.status(httpStatus.OK)
+        .clearCookie('token')
+        .send('Compte supprimé')
 }

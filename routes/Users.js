@@ -17,5 +17,6 @@ router.post('/resetpassword', validateId, userController.passwordReset)
 router.get('/basicinfo/:id', userController.profilePost)
 router.get('/me', validateToken, userController.profileMe) //cookie ok
 router.put('/profile', validateToken, userController.updateProfile)
+router.delete('/', validateToken, userController.delete)
 
 module.exports = router

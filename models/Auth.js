@@ -36,7 +36,9 @@ module.exports = (sequelize, DataTypes) => {
 
     Auths.associate = (models) => { 
         //Si ajout de la colonne ne fonctionne pas, supprimer tous les posts ou supprimer la table
-        Auths.belongsTo(models.Users)
+        Auths.belongsTo(models.Users, {
+            onDelete: 'cascade',
+        })
     }
     return Auths
 }

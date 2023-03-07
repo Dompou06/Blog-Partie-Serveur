@@ -32,37 +32,70 @@ exports.addPost = async (req, res) => {
 }
 exports.onePost = async (req, res) => {
     const id = req.params.id
-    const post = await Posts.findByPk(id, {
-        include: [Likes, {
-            model: Users,
-            attributes: ['username']
-        }] 
+    let post = await Posts.findByPk(id, {
+        attributes: {
+            exclude: ['UserId']
+        },
+        include: [
+            {
+                model: Likes,
+                attributes: ['PostId']
+            },
+            {
+                model: Users,
+                attributes: ['username']
+            }] 
     })
-    // console.log('post', post)
-    //const user = await Users.findByPk(post.UserId)
-    // console.log('user', user.username)
-    // const username = user.username
-    res.send(post)
+    let liked = false
+    if(req.user) {
+        const userId = req.user.id
+        const likeUser = await Posts.findByPk(id, {
+            include: [{
+                model: Likes,
+                attributes: ['UserId']
+            }] 
+        })
+        //console.log(likeUser.Likes)
+        likeUser.Likes.forEach(like => {
+            if(like.UserId === userId) {
+                liked = true
+            }
+        })
+    }
+    // console.log(post, liked)
+    res.status(httpStatus.OK).send({post, likeRight: liked})  
 }
 exports.allPosts = async (req, res) => {
     let listOfPosts = await Posts.findAll({
         order: [
             ['createdAt', 'DESC']
         ],
-        include: [Likes, {
-            model: Users,
-            attributes: ['username']
+        attributes: {
+            exclude: ['UserId']
         },
-        Comments
+        include: [
+            {
+                model: Likes,
+                attributes: ['PostId']
+            }, 
+            {
+                model: Users,
+                attributes: ['username']
+            }, 
+            {
+                model: Comments,
+                attributes: ['PostId']
+            }
         ]
     })        
     if(req.user){
         const likedPosts = await Likes.findAll({
             where: {
                 UserId: req.user.id 
-            }
+            },
+            attributes: ['PostId']
         })
-        res.send({
+        res.status(httpStatus.OK).send({
             listOfPosts: listOfPosts,
             likedPosts: likedPosts
         })
@@ -116,8 +149,8 @@ exports.postsLiked = async (req, res) => {
             userId: id 
         }
     })*/
-    console.log('likedPosts', likedPosts)
-    res.send({
+    // console.log('likedPosts', likedPosts)
+    res.status(httpStatus.OK).send({
         right: right,
         likedPosts})
     /*res.send({

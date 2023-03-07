@@ -20,6 +20,7 @@ router.get('/', postsController.allPosts)
 })*/
 //router.get('/byuserid/:id', validateToken, postsController.postsLiked)
 router.get('/byId/:id', postsController.onePost)
+router.get('/validbyId/:id', validateToken, postsController.onePost)
 router.put('/byId/:id', validateToken, postsController.updatePost)
 router.delete('/byId/:id', validateToken, postsController.deletePost)
 router.post('/', validateToken, postsController.addPost) //avec cookie
