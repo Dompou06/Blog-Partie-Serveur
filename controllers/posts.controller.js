@@ -66,6 +66,7 @@ exports.onePost = async (req, res) => {
     res.status(httpStatus.OK).send({post, likeRight: liked})  
 }
 exports.allPosts = async (req, res) => {
+    //let listOfPosts = await Posts.findAndCountAll({
     let listOfPosts = await Posts.findAll({
         order: [
             ['createdAt', 'DESC']
@@ -73,6 +74,8 @@ exports.allPosts = async (req, res) => {
         attributes: {
             exclude: ['UserId']
         },
+        //limit: 4,
+        // offset: 0,
         include: [
             {
                 model: Likes,
@@ -87,7 +90,7 @@ exports.allPosts = async (req, res) => {
                 attributes: ['PostId']
             }
         ]
-    })        
+    }) 
     if(req.user){
         const likedPosts = await Likes.findAll({
             where: {
@@ -100,7 +103,7 @@ exports.allPosts = async (req, res) => {
             likedPosts: likedPosts
         })
     } else {
-        res.send(
+        res.status(httpStatus.OK).send(
             listOfPosts
         )
     }

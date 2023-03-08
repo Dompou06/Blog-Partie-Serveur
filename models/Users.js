@@ -22,6 +22,9 @@ module.exports = (sequelize, DataTypes) => {
         Users.hasMany(models.Comments, {
             onDelete: 'cascade',
         })
+        Users.hasOne(models.Roles, {
+            onDelete: 'cascade',
+        })
         Users.hasOne(models.Auths, {
             onDelete: 'cascade',
         })

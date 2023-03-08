@@ -6,7 +6,7 @@ const crypted = require('../utils/crypt')
 const nodemailer = require('nodemailer')
 const { sign } = require('jsonwebtoken')
 
-const { Users, Posts, Likes, Auths, Comments, Passwords } = require('../models')
+const { Users, Posts, Likes, Auths, Comments, Passwords, Roles } = require('../models')
 const options = {
     sameSite: 'strict', 
     path: '/',
@@ -44,6 +44,10 @@ exports.signup = async (req, res) => {
                         {
                             password: hash,
                             email: crytedEmail,
+                            UserId: result.id
+                        })
+                    Roles.create(
+                        {
                             UserId: result.id
                         })
                     res.status(httpStatus.OK).send('Success')
@@ -384,7 +388,9 @@ exports.delete = async (req, res) => {
     await Users.destroy({
         where: {
             id: id
-        } 
+        }, 
+        include: [ Auths, Roles, Posts, Likes, Comments
+        ]
     })
     res.status(httpStatus.OK)
         .clearCookie('token')
