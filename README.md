@@ -63,14 +63,14 @@ Ouvrir le dossier backend
 1.	Modifier les données du fichier **.env.txt** selon les indications
 2.	Renommer le fichier .env.txt en **.env**
 3.	Exécuter sur le terminal `cd backend`
-4.	Lancer le serveur local depuis le terminal `npm stat`
-5.	Copier l’url du serveur local en fonction (ex : `http://localhost:3000`)
+4.	Lancer le serveur local depuis le terminal `npm start`
+5.	Copier l’url du serveur local en fonction (ex. : `http://localhost:3001`)
 
 ## Tests API
-L’ensemble des requêtes envoyées au backend sont à retrouver sur la <a href="https://documenter.getpostman.com/view/14239369/2s847HNXjr" target="_blank">documentation Postman</a>
+L’ensemble des requêtes envoyées au backend sont à retrouver sur la <a href="https://documenter.getpostman.com/view/14239369/2s93JqSkEr" target="_blank">documentation Postman</a>
 
 ## Installation Partie Client
-Rendez-vous sur le dépôt GitHub Partie Client pour continuer l'installation :
+Rendez-vous sur le dépôt GitHub Blog Partie Client pour continuer l'installation :
 
 ---
 ## Auteur

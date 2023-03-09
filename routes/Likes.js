@@ -3,6 +3,12 @@ const router = express.Router()
 const { Likes } = require('../models')
 const { validateToken } = require('../middlewares/Auth')
 
+/**
+* Liker ou pas un post 
+* @param {String} some userId
+* @param {String} some postId
+* @return { Promise }
+*/
 router.post('/', validateToken, async (req, res)=> {
     const userId = req.user.id
     const postId = req.body.PostId
@@ -14,13 +20,15 @@ router.post('/', validateToken, async (req, res)=> {
     })
     let result = {}
     if(!found) {
+    //On like
         await Likes.create({
             PostId: postId,
             UserId: userId
         })
         result.liked = true
         res.send(result)
-    } else {
+    } else {    
+    //On unlike
         await Likes.destroy({
             where: {
                 PostId: postId,

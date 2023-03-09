@@ -11,12 +11,17 @@ const options = {
     expired: new Date(Date.now()) + process.env.EXPIRETOKEN
 }
 
+/**
+* Ajouter un post
+* @param {Number} some req.user.id
+* @param {Object} some req.body
+* @return { Promise }
+*/
 exports.addPost = async (req, res) => {
     let post = req.body
     post.UserId = req.user.id
     await Posts.create(post)
         .then(result => {
-            // console.log(result)
             const id = result.id
             if(req.accessToken) {
                 res.status(httpStatus.OK)
@@ -30,6 +35,12 @@ exports.addPost = async (req, res) => {
             }
         })
 }
+/**
+* Information d'un post, de ses likes et auteur
+* @param {Number} some req.params.id
+* @param {Number} some req.user.id
+* @return { Promise }
+*/
 exports.onePost = async (req, res) => {
     const id = req.params.id
     let post = await Posts.findByPk(id, {
@@ -48,6 +59,7 @@ exports.onePost = async (req, res) => {
     })
     let liked = false
     if(req.user) {
+        //L'utilisateur est authentifié
         const userId = req.user.id
         const likeUser = await Posts.findByPk(id, {
             include: [{
@@ -55,18 +67,21 @@ exports.onePost = async (req, res) => {
                 attributes: ['UserId']
             }] 
         })
-        //console.log(likeUser.Likes)
         likeUser.Likes.forEach(like => {
             if(like.UserId === userId) {
+                //Si l'utilisateur a liké le post
                 liked = true
             }
         })
     }
-    // console.log(post, liked)
     res.status(httpStatus.OK).send({post, likeRight: liked})  
 }
+/**
+* Tous les post, avec ses likes, comments et auteur
+* @param {Number} some req.user.id
+* @return { Promise }
+*/
 exports.allPosts = async (req, res) => {
-    //let listOfPosts = await Posts.findAndCountAll({
     let listOfPosts = await Posts.findAll({
         order: [
             ['createdAt', 'DESC']
@@ -74,8 +89,6 @@ exports.allPosts = async (req, res) => {
         attributes: {
             exclude: ['UserId']
         },
-        //limit: 4,
-        // offset: 0,
         include: [
             {
                 model: Likes,
@@ -108,82 +121,30 @@ exports.allPosts = async (req, res) => {
         )
     }
 }
-exports.postsLiked = async (req, res) => {
-    const idUser = req.user.id
-    let userId = {}
-    let right = false
-    if(!req.params.id) {
-        //console.log('req.params.id.split(user)[0]', req.params.id)       
-        userId.UserId = idUser
-        right = true
-    } else {
-        const id = req.params.id
-        userId = await Posts.findByPk(id, {
-            attributes: ['UserId']
-        })
-        if(userId.UserId === idUser) {
-            right = true
-        }
-    }
-    //console.log('userId', userId.UserId)
-    const likedPosts = await Posts.findAll(
-        {
-            where: {
-                UserId: userId.UserId
-            },
-            include: [ {
-                model: Likes,
-                where: {
-                    UserId: userId.UserId
-                },
-                attributes: ['PostId'],
-            }],
-            attributes: ['title', 'postText', 'createdAt'],
-            
-        })
-    /* const listOfPosts = await Posts.findAll({
-        where: {
-            UserId: id
-        },
-        include: [Likes]
-    })*/
-    /*const likedPosts = await Likes.findAll({
-        where: {
-            userId: id 
-        }
-    })*/
-    // console.log('likedPosts', likedPosts)
-    res.status(httpStatus.OK).send({
-        right: right,
-        likedPosts})
-    /*res.send({
-       //listOfPosts: listOfPosts,
-        likedPosts: likedPosts
-    })*/
-}
+/**
+* Mise à jour d'un post
+* @param {Number} some req.params.id
+* @param {String} some req.body
+* @return { Promise }
+*/
 exports.updatePost = async (req, res) => {
-    // console.log(req.body.newTitle)
     const id = req.params.id
     const post = await Posts.findByPk(id)
     if(req.body.newTitle) {
-        //console.log(req.body.newTitle)
         const newTitle = req.body.newTitle
         await post.update({ title: newTitle })
         await post.save()
     } else {
-        // console.log(req.body.newBody)       
-        // const post = await Posts.findByPk(id)
         await post.update({ postText: req.body.newBody })
         await post.save()
     }
-    const result = await await Posts.findByPk(id, 
+    const result = await Posts.findByPk(id, 
         { attributes: ['title', 'postText'],
             include: [Likes, {
                 model: Users,
                 attributes: ['username']
             }]}
     )
-
     if(req.accessToken) {
         res.status(httpStatus.OK)
             .cookie('token', req.accessToken, options)
@@ -195,6 +156,11 @@ exports.updatePost = async (req, res) => {
         res.status(httpStatus.OK).send(result)
     }
 }
+/**
+* Suppression d'un post
+* @param {Number} some req.params.id
+* @return { Promise }
+*/
 exports.deletePost = async (req, res) => {
     const id = req.params.id
     await Posts.destroy({

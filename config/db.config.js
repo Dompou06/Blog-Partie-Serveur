@@ -1,4 +1,15 @@
 require('dotenv').config()
+
+/**
+* Informations of connection to Database 
+* @param {String} some username
+* @param {String} some password
+* @param {String} some database
+* @param {String} some host
+* @param {String} some dialect
+* @param {Object} some pool
+*/
+
 module.exports = {
     'development': {
         'username': process.env.DBUSER_DEV,

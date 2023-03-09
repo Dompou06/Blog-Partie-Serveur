@@ -10,8 +10,12 @@ const options = {
     // secure: true,
     expired: new Date(Date.now()) + process.env.EXPIRETOKEN
 }
+/**
+* Tous les comments d'un post
+* @param {Number} some req.params.postId
+* @return { Promise }
+*/
 exports.allComments = async (req, res) => {
-    // console.log('postId', req.params.postId)
     const postId = req.params.postId
     const comments = await Comments.findAll({
         where: {
@@ -28,40 +32,16 @@ exports.allComments = async (req, res) => {
             attributes: ['username']
         }]
     })
-    /* if(req.user) {
-        const userId = req.user.id
-        const commentsUser = await Comments.findAll({
-            where: {
-                PostId: postId,
-                UserId: userId
-            },   
-            attributes: {
-                exclude: ['UserId']
-            }
-        })
-        comments.forEach(comment => {
-            let exist = commentsUser.some(user => user.id === comment.id)
-            if (exist) { 
-                comment.dataValues.right = true
-                //console.log(comment.dataValues)
-            }
-        })
-        res.status(httpStatus.OK).send(comments)
-    } else {
-    //  console.log(comments)
-        comments.forEach(comment => {
-            comment.dataValues.right = false
-        //  console.log(comment.dataValues)
-        })
-        res.status(httpStatus.OK).send(comments)
-    }*/
-    //  console.log(comments)
     res.status(httpStatus.OK).send(comments)
 }
+/**
+* Ajouter un comment à un post
+* @param {String} some req.body
+* @param {Number} some req.user.id
+* @return { Promise }
+*/
 exports.addComment = async (req, res) => {
     const comment = req.body
-    //console.log('comment', comment)
-    //console.log('req.user', req.user)
     comment.UserId = req.user.id
     await Comments.create(comment)
         .then(result => {
@@ -87,6 +67,11 @@ exports.addComment = async (req, res) => {
             })
         })
 }
+/**
+* Supprimer un comment
+* @param {Number} some req.params.commentId
+* @return { Promise }
+*/
 exports.deleteComment = async (req, res) => {
     //console.log('req.params', req.params)
     const commentId = req.params.commentId

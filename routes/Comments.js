@@ -4,7 +4,6 @@ const { validateToken } = require('../middlewares/Auth')
 const commentsController = require('../controllers/comments.controller')
 
 router.get('/:postId', commentsController.allComments)
-//router.get('/validuser/:postId', validateToken, commentsController.allComments)
 router.post('/', validateToken, commentsController.addComment)
 router.delete('/:commentId', validateToken, commentsController.deleteComment)
 

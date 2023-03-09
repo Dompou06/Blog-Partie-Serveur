@@ -7,6 +7,7 @@ const nodemailer = require('nodemailer')
 const { sign } = require('jsonwebtoken')
 
 const { Users, Posts, Likes, Auths, Comments, Passwords, Roles } = require('../models')
+//Pour token cookie
 const options = {
     sameSite: 'strict', 
     path: '/',
@@ -16,22 +17,31 @@ const options = {
     expired: new Date(Date.now()) + process.env.EXPIRETOKEN
 }
 
+/**
+* Inscription d'un utilisateur 
+* @param {String} some req.body.username
+* @param {String} some req.body.email
+* @param {String} some req.body.password
+* @return { Promise }
+*/
 exports.signup = async (req, res) => {
     const { username, email, password } = req.body
-    //console.log(req.body)
+    //On véifie que le nom d'utilisateur n'existe pas
     const user = await Users.findOne({
         where: {
             username: username
         }
     })
     if(!user) {
+        //On vérifie l'email de l'utilisateur n'esxiste pas
         const crytedEmail = crypted.encrypt(email)
         const auth = await Auths.findOne({
             where: {
                 email: crytedEmail
             }
         })
-        if(!auth) { 
+        if(!auth) {
+            //On crée un compte 
             bcrypt.hash(password, 10).then(hash => {
                 Users.create(
                     {
@@ -39,7 +49,6 @@ exports.signup = async (req, res) => {
                         presentation: '',
                     }
                 ).then(result => {    
-                    //console.log('result', result.id)  
                     Auths.create(
                         {
                             password: hash,
@@ -54,40 +63,47 @@ exports.signup = async (req, res) => {
                 })
             })
         } else {
+            //L'email de l'utilisateu est déjà enregisté
             res.status(httpStatus.UNAUTHORIZED).send({error: 'Vous êtes déjà enregistré'})
         }
     } else {
+        //Le nom d'utilisateur existe déjà
         res.status(httpStatus.UNAUTHORIZED).send({error: 'Cet identifiant est déjà octroyé'})
     }
 }
+/**
+* Connexion d'un utilisateur 
+* @param {String} some req.body.email
+* @param {String} some req.body.password
+* @param {Boolean} some req.body.remember
+* @return { Promise }
+*/
 exports.login = async (req, res) => {  
-    //console.log(req.body)
     const { email, password, remember } = req.body
     const crytedEmail = crypted.encrypt(email)
+    //On cherche si l'email de l'utilisateur existe
     const auth = await Auths.findOne({
         where: {
             email: crytedEmail
         }
     })
     if(!auth) {
-        // console.log('!auth')
         res.status(httpStatus.UNAUTHORIZED).send({error: 'L\'utilisateur est inconnu'})
     } else { 
+        //On compare le password reçu et celui dans la BD
         bcrypt.compare(password, auth.password).then(match => {
             if(!match) {
-                // console.log('!match')
                 res.status(httpStatus.UNAUTHORIZED).send({error: 'Mot de passe invalide'})
             } else {
-                // console.log('match')
+                // On recheche le nom d'utilisateur
                 Users.findByPk(auth.UserId, {
-                    attributes: ['id','username']
+                    attributes: ['username']
                 }).then(user => {
-                    //console.log(user.id)
-                    const accessToken = sign({ id: user.id }, process.env.TOKEN, { expiresIn: process.env.EXPIRETOKEN })
+                    //On crée un token
+                    const accessToken = sign({ id: auth.UserId }, process.env.TOKEN, { expiresIn: process.env.EXPIRETOKEN })
+                    //On crée un refeshToken selon si l'utilisateur a choisi ou pas Remember me
                     let refreshToken = ''
-                    // console.log('remember', remember)
                     if(remember === true) {
-                        // console.log('ok')
                         refreshToken = sign({ id: user.id }, process.env.REMEMBERTOKEN, { expiresIn: process.env.EXPIREREMEMBERTOKEN })
                     } else {
                         refreshToken = sign({ id: user.id }, process.env.REFRESHTOKEN, { expiresIn: process.env.EXPIREREFRESHTOKEN })
@@ -96,29 +112,28 @@ exports.login = async (req, res) => {
                         .cookie('token', accessToken, options)
                         .send({
                             token: refreshToken,
-                            username: user.username, 
-                            //???
-                            // id: user.id
+                            username: user.username
                         })
-                    /* .json({
-                            token: accessToken,
-                            username: user.username, 
-                            //???
-                            id: user.id
-                        })*/
-                    // }
                 })
             }
         })
     }
-} 
+}
+/**
+* Déonnexion d'un utilisateur 
+* @return { Promise }
+*/
 exports.logout = async (req, res) => {
     res.status(httpStatus.OK)
         .clearCookie('token')
         .send('Déconnecté')
 }
+/**
+* Envoi d'un mail pour mot de passe oublié 
+* @param {String} some req.body.email
+* @return { Promise }
+*/
 exports.passwordForget = async (req, res) => {
-    //  console.log(req.body.email)
     const crytedEmail = crypted.encrypt(req.body.email)
     const auth = await Auths.findOne({
         where: {
@@ -127,10 +142,10 @@ exports.passwordForget = async (req, res) => {
     if(!auth) {
         res.status(httpStatus.UNAUTHORIZED).send({error: 'L\'utilisateur est inconnu'})
     } else { 
-        //console.log(req.body.email)
+        //On crée une ligne dans la table Passwods
         const password = await Passwords.create()
-        const key = sign({ id: password.id }, process.env.PASSWORDSECRET)
-        //console.log(key)
+        //On encrypte le id de la ligne
+        const key = sign({ id: password.id }, process.env.PASSWORDSECRET, { expiresIn: process.env.EXPIREPASSWORD })
         let transporter = nodemailer.createTransport({
             host: process.env.MAILHOST,
             port: process.env.MAILPORT,
@@ -162,8 +177,7 @@ exports.passwordForget = async (req, res) => {
             `
         const mailOptions = {
             from: process.env.MAILUSER,
-            to: 'dpourriere@outlook.fr',
-            //to: req.body.email,
+            to: req.body.email,
             subject: 'Réinitialisation du mot de passe de votre compte Blog',
             text: text,
             html: html
@@ -172,66 +186,43 @@ exports.passwordForget = async (req, res) => {
             if (error) {
                 res.status(httpStatus.NORESPONSE).send({error: 'Erreur email'})
             } else {
-                //console.log('Email sent: ' + info.response)
-                res.status(httpStatus.OK).send('Mail send')
+                res.status(httpStatus.OK).send('Un email vous a été envoyé')
             }
         })
     }
 }
+/**
+* Changement de mot de passe 
+* @param {String} some req.body.email
+* @return { Promise }
+*/
 exports.passwordReset = async (req, res) => {
-    //console.log(req.body)
-    //console.log(req.forget)
-    const forget = await Passwords.findOne({
+    //On cherche l'utilisateur pa son email
+    const crytedEmail = crypted.encrypt(req.body.email)
+    const auth = await Auths.findOne({
         where: {
-            id: req.forget.id
-        },
-        attributes: ['createdAt']
-    })
-    if(!forget) {       
-        // console.log('!forget')
-        res.status(httpStatus.UNAUTHORIZED).send({error: 'Demande non reconnue'})
-    } else {
-        const created = forget.createdAt
-        const thisDay = new Date()
-        //  console.log(created)
-        //console.log(thisDay)
-        const datediff = (thisDay.getTime() - created.getTime())/(60*60*1000)
-        if(datediff < 24) {
-            //  console.log(req.body.newpassword)
-            const crytedEmail = crypted.encrypt(req.body.email)
-            const auth = await Auths.findOne({
-                where: {
-                    email: crytedEmail
-                }
-            })
-            if(auth) {
-                //console.log(auth)
-                await bcrypt.hash(req.body.newpassword, 10).then(hash => {
-                    auth.update({ password: hash })
-                    auth.save()
-                })
-                await Passwords.destroy({
-                    where: {
-                        id: req.forget.id
-                    }
-                })
-                res.status(httpStatus.OK).send('Mot de passe réinitialisé')
-            } else {
-                //console.log('!auth')
-                res.status(httpStatus.UNAUTHORIZED).send({error: 'Demande non reconnue'})
-            }
-        } else {
-            // console.log('> 24')
-            res.status(httpStatus.UNAUTHORIZED).send({error: 'Demande non reconnue'})
+            email: crytedEmail
         }
+    })
+    if(auth) {
+        //On met à jour le mot de passe
+        await bcrypt.hash(req.body.newpassword, 10).then(hash => {
+            auth.update({ password: hash })
+            auth.save()
+        })
+        res.status(httpStatus.OK).send('Mot de passe réinitialisé')
+    } else {
+        res.status(httpStatus.UNAUTHORIZED).send({error: 'Demande non reconnue'})
     }
 }
+/**
+* Authentification et renvoie de nouveaux token
+* @param {Numer} some req.user.id
+* @return { Promise }
+*/
 exports.authentification = async (req, res) => {
-    //console.log('req.user', req.user)
     await Users.findByPk(req.user.id, {
-        attributes: {
-            exclude: ['password', 'id']
-        }
+        attributes: 'username'
     }).then(response => {
         if(response) {
             if(req.accessToken) {
@@ -249,27 +240,28 @@ exports.authentification = async (req, res) => {
         }
     })
 }
+/**
+* Profil d'un auteur
+* @param {Sting} some req.params.id
+* @return { Promise }
+*/
 exports.profilePost = async (req, res) => {
-    // console.log(req.params.id)
     let userId = {}
     let id =''
     if(req.params.id.includes('comment')) {
-        // console.log(req.params.id)
+        //Si c'est l'auteur d'un commentaire
         const split = req.params.id.split('comment')
-        // console.log(split[1])
         id = split[1]
         userId = await Comments.findByPk(id, {
             attributes: ['UserId']
         })
-        //  console.log(userId)
     } else {
+        //Si c'est l'auteur d'un post
         id = req.params.id 
         userId = await Posts.findByPk(id, {
             attributes: ['UserId']
         })
     }
-    
-    // }
     const basicInfo = await Users.findByPk(userId.UserId, {
         attributes: ['username', 'presentation'],
         include: [ {
@@ -287,6 +279,11 @@ exports.profilePost = async (req, res) => {
     })
     res.send(basicInfo)
 }
+/**
+* Profil de l'utilisateur
+* @param {Number} some req.params.id
+* @return { Promise }
+*/
 exports.profileMe = async (req, res) => {
     const userId = req.user.id 
     const userInfo = {}
@@ -333,12 +330,8 @@ exports.profileMe = async (req, res) => {
     }
     userInfo.state = basicInfo.Auth.state
     userInfo.Posts = basicInfo.Posts
-    //console.log('basicInfo', email)
     if(req.accessToken) {
-        /*console.log('now', {
-            token: req.refreshToken,
-            basicInfo: basicInfo
-        })*/
+        //Si les token ont été réinitialisés
         res.status(httpStatus.OK)
             .cookie('token', req.accessToken, options)
             .send({
@@ -349,10 +342,16 @@ exports.profileMe = async (req, res) => {
         res.status(httpStatus.OK).send({basicInfo: userInfo})
     }
 }
+/**
+* Mise à jour du profile de l'utilisateur
+* @param {Number} some req.user.id
+* @param {String} some req.body.field
+* @param {String} some req.body.value
+* @return { Promise }
+*/
 exports.updateProfile = async (req, res) => {
     const id = req.user.id
     const field = req.body.field
-    //console.log(req.body)
     const user = await Users.findByPk(id)
     if(field === 'presentation') {
         await user.update({ [field]: req.body.value })
@@ -372,7 +371,6 @@ exports.updateProfile = async (req, res) => {
         await auth.update({ [field]: value })
         await auth.save()
     }
-    //console.log('user', user)
     if(req.accessToken) {
         res.status(httpStatus.OK)
             .cookie('token', req.accessToken, options)
@@ -383,6 +381,11 @@ exports.updateProfile = async (req, res) => {
         res.send('Présentation mise à jour')
     }
 }
+/**
+* MSuppression du compte de l'utilisateur et de l'ensemble des données le concernant
+* @param {Number} some req.user.id
+* @return { Promise }
+*/
 exports.delete = async (req, res) => {
     const id = req.user.id
     await Users.destroy({
