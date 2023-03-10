@@ -70,7 +70,7 @@ Ouvrir le dossier backend
 L’ensemble des requêtes envoyées au backend sont à retrouver sur la <a href="https://documenter.getpostman.com/view/14239369/2s93JqSkEr" target="_blank">documentation Postman</a>
 
 ## Installation Partie Client
-Rendez-vous sur le dépôt GitHub Blog Partie Client pour continuer l'installation :
+Rendez-vous sur le dépôt GitHub Blog Partie Client pour continuer l'installation : <a href="https://documenter.getpostman.com/view/14239369/2s93JqSkEr" target="_blank">https://github.com/Dompou06/Blog-Partie-Client</a>
 
 ---
 ## Auteur
