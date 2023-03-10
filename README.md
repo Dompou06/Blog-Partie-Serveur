@@ -56,7 +56,7 @@ Modules : `npm i express cors bcrypt cookie-parser cron express-rate-limit helme
 
 Ces instructions vont vous permettre d'obtenir une copie fonctionnelle et modulable du projet sur votre poste de travail.
 ---
-5. Clôner le dépôt GitHub https://github.com/Dompou06/PAC---Partie-Clients.git
+5. Clôner le dépôt GitHub <a href="https://documenter.getpostman.com/view/14239369/2s93JqSkEr" target="_blank">https://github.com/Dompou06/Blog-Partie-Client</a>
 
 ## Démarrage rapide
 Ouvrir le dossier backend
